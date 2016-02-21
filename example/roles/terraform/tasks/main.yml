@@ -1,0 +1,4 @@
+---
+- name: install some dependencies
+  debug:
+    msg: "This is run on terraform provisioned hosts"

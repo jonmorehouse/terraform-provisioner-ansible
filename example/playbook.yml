@@ -1,0 +1,8 @@
+---
+- hosts: all
+  roles:
+    - base
+
+- name: terraform
+  roles:
+    - terraform

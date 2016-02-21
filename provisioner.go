@@ -10,6 +10,8 @@ import (
 	"github.com/mitchellh/go-linereader"
 	"io"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 type Provisioner struct {
@@ -17,15 +19,28 @@ type Provisioner struct {
 	ansibleLocalScript string
 	Playbook           string            `mapstructure:"playbook"`
 	Plays              []string          `mapstructure:"plays"`
+	Hosts              []string          `mapstructure:"hosts"`
 	ModulePath         string            `mapstructure:"module_path"`
 	Groups             []string          `mapstructure:"groups"` // group_vars are expected to be under <ModulePath>/group_var/name
 	ExtraVars          map[string]string `mapstructure:"extra_vars"`
 }
 
 func (p *Provisioner) Run(o terraform.UIOutput, comm communicator.Communicator) error {
+	// parse the playbook path and ensure that it is valid before doing
+	// anything else. This is done in validate but is repeated here, just
+	// in case.
+	playbookPath, err := p.resolvePath(p.Playbook)
+	if err != nil {
+		return err
+	}
+
 	// commands that are needed to setup a basic environment to run the `ansible-local.py` script
 	// TODO pivot based upon different platforms and allow optional python provision steps
+	// TODO this should be configurable for folks who want to customize this
 	provisionAnsibleCommands := []string{
+		// https://github.com/hashicorp/terraform/issues/1025
+		// cloud-init runs on fresh sources and can interfere with apt-get update commands causing intermittent failures
+		"/bin/bash -c 'until [[ -f /var/lib/cloud/instance/boot-finished ]]; do sleep 1; done'",
 		"apt-get update",
 		"apt-get install -y build-essential python-dev",
 		"curl https://bootstrap.pypa.io/get-pip.py | sudo python",
@@ -40,17 +55,17 @@ func (p *Provisioner) Run(o terraform.UIOutput, comm communicator.Communicator) 
 		}
 	}
 
-	// upload ansible source and playbook to the host
-	if err := comm.UploadDir("/tmp/ansible-module-path", p.ModulePath); err != nil {
-		return err
-	}
+	// ansible projects are structured such that the playbook file is in
+	// the top level of the module path. As such, we parse the playbook
+	// path's directory and upload the entire thing
+	playbookDir := filepath.Dir(playbookPath)
 
-	playbook, err := os.Open(p.Playbook)
-	if err != nil {
-		return err
-	}
-	defer playbook.Close()
-	if err := comm.Upload("/tmp/ansible-playbook", playbook); err != nil {
+	// the host playbook path is the path on the host where the playbook
+	// will be uploaded too
+	remotePlaybookPath := filepath.Join("/tmp/ansible", filepath.Base(playbookPath))
+
+	// upload ansible source and playbook to the host
+	if err := comm.UploadDir("/tmp/ansible", playbookDir); err != nil {
 		return err
 	}
 
@@ -59,15 +74,16 @@ func (p *Provisioner) Run(o terraform.UIOutput, comm communicator.Communicator) 
 		return err
 	}
 
-	// build run command!
-	command := fmt.Sprintf("curl %s | python --module-path=%s --playbook=%s --plays=%s --groups=%s --extra-vars=%s",
+	// build a command to run ansible on the host machine
+	command := fmt.Sprintf("curl %s | python - --playbook=%s --hosts=%s --plays=%s --groups=%s --extra-vars=%s",
 		p.ansibleLocalScript,
-		p.ModulePath,
-		p.Playbook,
-		strings.Join(",", p.Plays),
-		strings.Join(",", p.Groups),
+		remotePlaybookPath,
+		strings.Join(p.Hosts, ","),
+		strings.Join(p.Plays, ","),
+		strings.Join(p.Groups, ","),
 		string(extraVars))
 
+	o.Output(fmt.Sprintf("running command: %s", command))
 	if err := p.runCommand(o, comm, command); err != nil {
 		return err
 	}
@@ -76,26 +92,16 @@ func (p *Provisioner) Run(o terraform.UIOutput, comm communicator.Communicator) 
 }
 
 func (p *Provisioner) Validate() error {
-	return nil
-
-	modulePath, err := homedir.Expand(p.ModulePath)
+	playbookPath, err := p.resolvePath(p.Playbook)
 	if err != nil {
-		return fmt.Errorf("ModulePath is not a valid filepath: %s", p.ModulePath)
+		return err
 	}
+	p.Playbook = playbookPath
 
-	stat, err := os.Stat(modulePath)
-	if err != nil && os.IsNotExist(err) || stat.IsDir() {
-		return fmt.Errorf("ModulePath is not a valid directory. path: %s", p.ModulePath)
-	}
-
-	playbookPath, err := homedir.Expand(p.Playbook)
-	if err != nil {
-		return fmt.Errorf("Playbook is not a valid filepath. path: %s", p.Playbook)
-	}
-
-	_, err = os.Stat(playbookPath)
-	if err != nil && os.IsNotExist(err) {
-		return fmt.Errorf("Playbook is not a valid filepath. path: %s", p.Playbook)
+	for _, host := range p.Hosts {
+		if host == "" {
+			return fmt.Errorf("Invalid hosts parameter. hosts: %s", p.Hosts)
+		}
 	}
 
 	for _, play := range p.Plays {
@@ -107,6 +113,12 @@ func (p *Provisioner) Validate() error {
 	for _, group := range p.Groups {
 		if group == "" {
 			return fmt.Errorf("Invalid group. groups: %s", p.Groups)
+		}
+	}
+
+	for _, host := range p.Hosts {
+		if host == "" {
+			return fmt.Errorf("Invalid host. hosts: %s", p.Hosts)
 		}
 	}
 
@@ -161,4 +173,23 @@ func (p *Provisioner) copyOutput(o terraform.UIOutput, r io.Reader, doneCh chan<
 	for line := range lr.Ch {
 		o.Output(line)
 	}
+}
+
+func (p *Provisioner) resolvePath(path string) (string, error) {
+	expandedPath, _ := homedir.Expand(path)
+	if _, err := os.Stat(expandedPath); err == nil {
+		return expandedPath, nil
+	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("Unable to get current working address to resolve path as a relative path")
+	}
+
+	relativePath := filepath.Join(cwd, path)
+	if _, err := os.Stat(relativePath); err == nil {
+		return relativePath, nil
+	}
+
+	return "", fmt.Errorf("Path not valid")
 }
