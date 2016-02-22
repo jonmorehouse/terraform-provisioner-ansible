@@ -4,6 +4,7 @@
 import argparse
 import collections
 import json
+import os
 import os.path
 import socket
 import subprocess
@@ -23,31 +24,52 @@ OptionsClass = collections.namedtuple('Options', ('connection', 'module_path', '
                                  'become', 'become_method', 'become_user', 'verbosity', 'check'))
 
 
-def build_inventory(loader, variable_manager, group_names):
+def build_inventory(loader, variable_manager, group_names, playbook_basedir):
     inventory = Inventory(loader=loader, variable_manager=variable_manager, host_list=['localhost'])
-    host = inventory.get_hosts()[0]
-    
+
+    # because we just pass in a "host list" which isn't a real inventory file,
+    # we explicitly have to add all of the desired groups to the inventory. By
+    # default an "all" group is created whenever a new inventory is created
     for group_name in group_names:
         if not inventory.get_group(group_name):
-            group = Group(group_name)
-            inventory.add_group(group)
+            inventory.add_group(Group(group_name))
 
-        inventory.get_group(group_name).add_host(host)
+    # because we are explicitly adding groups, we also need to make sure that a
+    # playbook basedir is set so that `group_vars` can be loaded from the
+    # correct directory.
+    inventory.set_playbook_basedir(playbook_basedir)
+    inventory_hosts = inventory.get_hosts()
+
+    # for each group specified, ensure that the inventory's host (localhost) is
+    # explicitly in the group.
+    for group_name in group_names:
+        group = inventory.get_group(group_name)
+        if group.get_hosts():
+            continue
+
+        for host in inventory.get_hosts():
+            group.add_host(host)
 
     return inventory
 
 
-def build_plays(loader, variable_manager, playbook_path, play_ids):
+def build_plays(loader, variable_manager, playbook_path, plays=[], hosts=[]):
     playbook = Playbook.load(playbook_path, variable_manager, loader)
     plays = []
     
     for play in playbook.get_plays():
-        # a play can correspond to a play name or the host group
-        for play_id in play_ids:
-            if play.get_name() == play_id:
+        if play.get_name() in plays:
+            plays.append(play)
+            continue
+        
+        if play._ds['hosts'] in hosts:
+            plays.append(play)
+            continue
+
+        for piece in play._ds['hosts']:
+            if piece in hosts:
                 plays.append(play)
-            elif play._ds['hosts'] == play_id:
-                plays.append(play)
+                break
 
     return plays
 
@@ -55,16 +77,24 @@ def build_plays(loader, variable_manager, playbook_path, play_ids):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ansible-local script for running ansible against localhost')
 
-    parser.add_argument('--module-path', help='path to ansible source', required=True)
-    parser.add_argument('--playbook', help='path to playbook file', required=True)
-    parser.add_argument('--plays', help='list of plays to apply to host', required=True, type=lambda x: x.split(","))
-    parser.add_argument('--groups', help='list of groups to apply to host', required=True, type=lambda x: x.split(","))
+    parser.add_argument('--playbook', help='full filepath of the playbook', required=True)
     parser.add_argument('--extra-vars', help='json encoded string with extra-var information', required=True, type=lambda x: json.loads(x))
-
+    parser.add_argument('--groups', help='list of groups to apply to the localhost', required=False, type=lambda x: x.split(','))
+    parser.add_argument('--plays', help='list of explicitly named plays to run', required=True, type=lambda x: x.split(','))
+    parser.add_argument('--hosts', help='list of host groups based plays to run ', required=False, type=lambda x: x.split(','))
     args = parser.parse_args()
+
+    # clean up arguments that were optional or semioptional
+    assert args.plays or args.hosts, "either a list of host groups or a list of plays are required"
+    if not args.plays:
+        args.plays = []
+    if not args.hosts:
+        args.hosts = []
+
+    playbook_basedir = os.path.dirname(os.path.abspath(args.playbook))
     
     options = OptionsClass(connection='local',
-                      module_path=args.module_path,
+                      module_path=playbook_basedir,
                       forks=100,
                       remote_user=None,
                       private_key_file=None,
@@ -85,12 +115,11 @@ if __name__ == '__main__':
         'roles': 'all',
     }
     variable_manager.extra_vars.update(args.extra_vars)
-    
-    inventory = build_inventory(loader, variable_manager, args.groups + args.plays)
+    inventory = build_inventory(loader, variable_manager, args.groups, playbook_basedir)
 
     variable_manager.set_inventory(inventory)
-    plays = build_plays(loader, variable_manager, args.playbook, args.plays)
-
+    plays = build_plays(loader, variable_manager, args.playbook, plays=args.plays, hosts=args.hosts)
+    
     tqm = TaskQueueManager(
         inventory=inventory,
         variable_manager=variable_manager,

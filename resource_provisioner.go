@@ -10,11 +10,11 @@ import (
 )
 
 type ResourceProvisioner struct {
-	playbook   string // filepath for the
-	inventory  string
-	modulePath string // the module path for all group
+	playbook  string // filepath for the
+	inventory string
 
-	groupVars []string          // list of group-vars to be passed to the provisioner
+	groups    []string          // list of group-vars to be passed to the provisioner
+	hosts     []string          // list of host groups to apply to the provisioner
 	extraVars map[string]string // extra variables that can be passed to the provisioner
 }
 
@@ -31,13 +31,11 @@ func (r *ResourceProvisioner) Apply(
 
 	err = provisioner.Validate()
 	if err != nil {
-		o.Output("erred out here 2")
+		o.Output("Invalid provisioner configuration settings")
 		return err
 	}
 	provisioner.useSudo = true
-	// TODO: move this to a distribution time embedded variable
-	gitRef := "first-pass"
-	provisioner.ansibleLocalScript = fmt.Sprintf("https://raw.githubusercontent.com/jonmorehouse/terraform-provisioner-ansible/%s/ansible-local.py", gitRef)
+	provisioner.ansibleLocalScript = fmt.Sprintf("https://raw.githubusercontent.com/jonmorehouse/terraform-provisioner-ansible/%s/ansible-local.py", VERSION)
 
 	// ensure that this is a linux machine
 	if s.Ephemeral.ConnInfo["type"] != "ssh" {

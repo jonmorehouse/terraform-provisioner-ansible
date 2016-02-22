@@ -5,12 +5,7 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 )
 
-//const AnsibleLocal = "https://github.com/jonmorehouse/terraform-provi
-
-// this implements the tfrpc.ProvisionerFunc type and returns an instance of a
-// resourceProvisioner when called
 func ResourceProvisionerBuilder() terraform.ResourceProvisioner {
-
 	return &ResourceProvisioner{}
 }
 
