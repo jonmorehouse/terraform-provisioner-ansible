@@ -51,23 +51,23 @@ def build_inventory(loader, variable_manager, group_names, playbook_basedir):
 
 def build_plays(loader, variable_manager, playbook_path, plays=[], hosts=[]):
     playbook = Playbook.load(playbook_path, variable_manager, loader)
-    plays = []
+    _plays = []
 
     for play in playbook.get_plays():
         if play.get_name() in plays:
-            plays.append(play)
+            _plays.append(play)
             continue
 
         if play._ds['hosts'] in hosts:
-            plays.append(play)
+            _plays.append(play)
             continue
 
         for piece in play._ds['hosts']:
             if piece in hosts:
-                plays.append(play)
+                _plays.append(play)
                 break
 
-    return plays
+    return _plays
 
 
 if __name__ == '__main__':
@@ -109,7 +109,14 @@ if __name__ == '__main__':
     loader = DataLoader()
     variable_manager = VariableManager()
     variable_manager.extra_vars.update(args.extra_vars)
-    inventory = build_inventory(loader, variable_manager, args.groups + args.hosts, playbook_basedir)
+
+    # we apply an exhaustive list of groups to the host that is created in the
+    # inventory, simply to ensure that we resolve the correct hosts for each
+    # play. This has the unfortunate side effect that if someone has a
+    # group_var that shadows the name of a play, it could be applied unexpectedly.
+    # TODO: look up plays by name and fetch the host_groups explicitly to be added.
+    inventory_host_groups = args.groups + args.hosts + args.plays
+    inventory = build_inventory(loader, variable_manager, inventory_host_groups, playbook_basedir)
 
     variable_manager.set_inventory(inventory)
     plays = build_plays(loader, variable_manager, args.playbook, plays=args.plays, hosts=args.hosts)
