@@ -88,6 +88,8 @@ if __name__ == '__main__':
         args.plays = []
     if not args.hosts:
         args.hosts = []
+    if not args.extra_vars:
+        args.extra_vars = {}
 
     playbook_basedir = os.path.dirname(os.path.abspath(args.playbook))
 
