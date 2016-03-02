@@ -49,7 +49,7 @@ def build_inventory(loader, variable_manager, group_names, playbook_basedir):
     return inventory
 
 
-def build_plays(loader, variable_manager, playbook_path, plays=[], hosts=[]):
+def build_plays(loader, variable_manager, playbook_path, plays=[], hosts=[], roles=[]):
     playbook = Playbook.load(playbook_path, variable_manager, loader)
     _plays = []
 
@@ -67,6 +67,10 @@ def build_plays(loader, variable_manager, playbook_path, plays=[], hosts=[]):
                 _plays.append(play)
                 break
 
+        for role in play.get_roles():
+            if role.get_name() in roles:
+                _plays.append(play)
+
     return _plays
 
 
@@ -80,14 +84,18 @@ if __name__ == '__main__':
     parser.add_argument('--groups', help='ansible groups', required=False, type=string_to_list)
     parser.add_argument('--plays', help='named plays to run', required=False, type=string_to_list)
     parser.add_argument('--hosts', help='host groups to run', required=False, type=string_to_list)
+    parser.add_argument('--roles', help='explicit list of roles to apply', required=False, type=string_to_list)
     args = parser.parse_args()
 
     # clean up arguments that were optional or semioptional
-    assert args.plays or args.hosts, "either a list of host groups or a list of plays are required"
+    assert args.plays or args.hosts or args.roles, "at a minimum, a list of roles, groups or hosts must be specified"
     if not args.plays:
         args.plays = []
     if not args.hosts:
         args.hosts = []
+    if not args.roles:
+        args.roles = []
+
     if not args.extra_vars:
         args.extra_vars = {}
 
@@ -121,7 +129,7 @@ if __name__ == '__main__':
     inventory = build_inventory(loader, variable_manager, inventory_host_groups, playbook_basedir)
 
     variable_manager.set_inventory(inventory)
-    plays = build_plays(loader, variable_manager, args.playbook, plays=args.plays, hosts=args.hosts)
+    plays = build_plays(loader, variable_manager, args.playbook, plays=args.plays, hosts=args.hosts, roles=args.roles)
 
     tqm = TaskQueueManager(
         inventory=inventory,
