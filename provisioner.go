@@ -191,5 +191,5 @@ func (p *Provisioner) resolvePath(path string) (string, error) {
 		return relativePath, nil
 	}
 
-	return "", fmt.Errorf("Path not valid")
+	return "", fmt.Errorf("Path not valid: [%s]", relativePath)
 }
