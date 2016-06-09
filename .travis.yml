@@ -2,23 +2,28 @@ sudo: false
 
 language: go
 go:
-  - 1.5
-
-go_import_path: github.com/masterzen/winrm/winrm
+  - 1.6
 
 env:
-  - GIMME_OS=linux  GIMME_ARCH=amd64
+  - GIMME_OS=linux   GIMME_ARCH=amd64
+#  - GIMME_OS=darwin  GIMME_ARCH=amd64
+#  - GIMME_OS=windows GIMME_ARCH=amd64
+
+# branches:
+#   only:
+#   - master
 
 # workaround for travis-ci/gimme#25 to pick up latest version of gimme and run again
 before_install:
   - curl -o gimme -sL https://raw.githubusercontent.com/travis-ci/gimme/master/gimme
   - chmod u+x gimme
   - unset GOROOT GOTOOLDIR
-  - eval "$(./gimme 1.5)"
+  - eval "$(./gimme 1.6)"
   - go version
   - go env
 
 install:
+  - date -u +"%Y-%m-%dT%H:%M:%SZ"
   - go get -d -v ./...
 
 script:
