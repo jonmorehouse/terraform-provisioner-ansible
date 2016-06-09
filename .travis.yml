@@ -1,9 +1,15 @@
 sudo: false
+
 language: go
 go:
   - 1.5
+
+go_import_path: github.com/masterzen/winrm/winrm
+
 env:
   - GIMME_OS=linux  GIMME_ARCH=amd64
+
+# workaround for travis-ci/gimme#25 to pick up latest version of gimme and run again
 before_install:
   - curl -o gimme -sL https://raw.githubusercontent.com/travis-ci/gimme/master/gimme
   - chmod u+x gimme
@@ -11,11 +17,14 @@ before_install:
   - eval "$(./gimme 1.5)"
   - go version
   - go env
+
 install:
   - go get -d -v ./...
+
 script:
   - go build -v -o terraform-provisioner-ansible
   - tar czvf terraform-provisioner-ansible_${TRAVIS_TAG}_${GIMME_OS}_${GIMME_ARCH}.tar.gz terraform-provisioner-ansible
+
 deploy:
   # setup with "travis setup releases"
   provider: releases
