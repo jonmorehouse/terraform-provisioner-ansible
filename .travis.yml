@@ -2,11 +2,19 @@
 # https://docs.travis-ci.com/user/languages/go
 sudo: false
 language: go
-go:
-  - 1.5
+#go:
+#  - 1.5
 env:
   - GIMME_OS=linux  GIMME_ARCH=amd64
-  - GIMME_OS=darwin GIMME_ARCH=amd64
+#  - GIMME_OS=darwin GIMME_ARCH=amd64
+# # workaround for travis-ci/gimme#25 to pick up latest version of gimme and run again
+# before_install:
+#   - curl -o gimme -sL https://raw.githubusercontent.com/travis-ci/gimme/master/gimme
+#   - chmod u+x gimme
+#   - unset GOROOT GOTOOLDIR
+#   - eval "$(./gimme 1.5)"
+#   - go version
+#   - go env
 install:
   - go get -d -v ./...
 script:
