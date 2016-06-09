@@ -9,9 +9,11 @@ env:
   - GIMME_OS=darwin  GIMME_ARCH=amd64
   - GIMME_OS=windows GIMME_ARCH=amd64
 
-branches:
-  only:
-    - master
+# whitelisting or blacklisting branches seems to disable Travis-CI's tag recognition !!
+#
+# branches:
+#   only:
+#     - master
 
 # workaround for travis-ci/gimme#25 to pick up latest version of gimme and run again
 before_install:
@@ -40,6 +42,6 @@ deploy:
   file_glob: true
   on:
     repo: joaocc/jonmorehouse--terraform-provisioner-ansible
-    all_branches: true
-    #branch: master
+    #all_branches: true
+    branch: master
     tags: true
