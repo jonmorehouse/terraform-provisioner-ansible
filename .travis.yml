@@ -1,30 +1,27 @@
----
-# https://docs.travis-ci.com/user/languages/go
 sudo: false
 language: go
-#go:
-#  - 1.5
+go:
+  - 1.5
 env:
   - GIMME_OS=linux  GIMME_ARCH=amd64
-#  - GIMME_OS=darwin GIMME_ARCH=amd64
-# # workaround for travis-ci/gimme#25 to pick up latest version of gimme and run again
-# before_install:
-#   - curl -o gimme -sL https://raw.githubusercontent.com/travis-ci/gimme/master/gimme
-#   - chmod u+x gimme
-#   - unset GOROOT GOTOOLDIR
-#   - eval "$(./gimme 1.5)"
-#   - go version
-#   - go env
+before_install:
+  - curl -o gimme -sL https://raw.githubusercontent.com/travis-ci/gimme/master/gimme
+  - chmod u+x gimme
+  - unset GOROOT GOTOOLDIR
+  - eval "$(./gimme 1.5)"
+  - go version
+  - go env
 install:
   - go get -d -v ./...
 script:
   - go build -v -o terraform-provisioner-ansible
   - tar czvf terraform-provisioner-ansible_${TRAVIS_TAG}_${GIMME_OS}_${GIMME_ARCH}.tar.gz terraform-provisioner-ansible
 deploy:
+  # setup with "travis setup releases"
   provider: releases
   skip_cleanup: true
   api_key:
-    secure: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    secure: Lo8r7j6pDb2jGUYNmAe4qLup5kOmHhvEqHwDR+/dqUI0j7e9WybBKxnpvnVlvLYfWxETXsxNqFjUSf08cIug4k5T1yRDRmFeAWxCD1dPaPVLjneQKk5cjx+pf+0ENzS7dLcRxesi94bRS2X91cMtWnITJrhReUwYXsnq7mz1XVjVJxlPZDCwYImCV4sK2w+hNeijV6FC6mO0TxmUrIMaumnYEhK1rl9z+jdZh4xhHTx2lL+5CAxUcBWDIs4kLkWrkxg2I5CScWunpipqArz40ZUgI37oSiGf1l6IDttiok0xayz7Q+03rbK6S602CtbHR5Z8Vag74UFiY78LxA+xVjZJ3pt10Chj2k188DemhhU7lwSLfkqfLsm/4FZbIjNumHz4d54UR/F5EVJ6T7tesVyOfYtwwI/9fxNG1ydrbZFvpFqKfzP2OYws6wyDEikByNnwdMzmMdw5qe5c1HsMW0jsrGh747LmPlZVqLCl1toj25KqJSNYBi9z+mnRvKp2Ki9RtWdV+2kwTx2tB/9mGMh1rmB1vEhF5WberWsFZnW8yXzqJHKF8gWClqqWRYJzGmB+Em8T/i8RDnJZCkaC6NpZU6XAwWeJOi3FouqZffMVDWvHeD/VfEm0e8msXSo+4f+1DdUy1OMNShsCXLIDlP+tDfv/T0CrCit1HKF0y7o=
   file: terraform-provisioner-ansible_*
   file_glob: true
   on:

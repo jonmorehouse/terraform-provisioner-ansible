@@ -1,8 +1,8 @@
+github.com/masterzen/winrm/winrm
 github.com/mitchellh/go-linereader
 github.com/hashicorp/terraform
 github.com/xanzy/ssh-agent
-#github.com/packer-community/winrmcp/winrmcp
+github.com/packer-community/winrmcp/winrmcp
 github.com/nu7hatch/gouuid
-#github.com/dylanmei/winrmtest
+github.com/dylanmei/winrmtest
 github.com/mitchellh/go-homedir
-github.com/masterzen/winrm/winrm
