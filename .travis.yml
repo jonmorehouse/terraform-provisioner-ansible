@@ -23,7 +23,7 @@ before_install:
   - go env
 
 install:
-  - echo "NOW_TSTAMP: " && date -u +"%Y-%m-%dT%H:%M:%SZ"
+  - echo "NOW_TSTAMP: " && date -u +"\%Y-\%m-\%dT\%H:\%M:\%SZ"
   - go get -d -v ./...
 
 script:
