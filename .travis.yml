@@ -40,6 +40,6 @@ deploy:
   file_glob: true
   on:
     repo: joaocc/jonmorehouse--terraform-provisioner-ansible
-    #all_branches: true
-    branch: master
+    all_branches: true
+    #branch: master
     tags: true
