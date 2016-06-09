@@ -5,3 +5,4 @@ github.com/xanzy/ssh-agent
 github.com/nu7hatch/gouuid
 #github.com/dylanmei/winrmtest
 github.com/mitchellh/go-homedir
+github.com/masterzen/winrm/winrm
