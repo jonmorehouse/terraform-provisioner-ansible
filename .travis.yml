@@ -3,15 +3,15 @@
 sudo: false
 language: go
 go:
-- 1.5
+  - 1.5
 env:
-- GIMME_OS=linux GIMME_ARCH=amd64
-- GIMME_OS=darwin GIMME_ARCH=amd64
+  - GIMME_OS=linux  GIMME_ARCH=amd64
+  - GIMME_OS=darwin GIMME_ARCH=amd64
 install:
-- go get -d -v ./...
+  - go get -d -v ./...
 script:
-- go build -v -o terraform-provisioner-ansible
-- tar czvf terraform-provisioner-ansible_${TRAVIS_TAG}_${GIMME_OS}_${GIMME_ARCH}.tar.gz terraform-provisioner-ansible
+  - go build -v -o terraform-provisioner-ansible
+  - tar czvf terraform-provisioner-ansible_${TRAVIS_TAG}_${GIMME_OS}_${GIMME_ARCH}.tar.gz terraform-provisioner-ansible
 deploy:
   provider: releases
   skip_cleanup: true
