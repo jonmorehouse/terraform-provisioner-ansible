@@ -10,10 +10,8 @@ env:
   - GIMME_OS=windows GIMME_ARCH=amd64
 
 branches:
-  except:
-    - 2-jon
-#   only:
-#   - master
+  only:
+    - master
 
 # workaround for travis-ci/gimme#25 to pick up latest version of gimme and run again
 before_install:
