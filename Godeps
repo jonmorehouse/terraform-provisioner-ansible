@@ -1,3 +1,4 @@
+github.com/masterzen/winrm/winrm
 github.com/mitchellh/go-linereader
 github.com/hashicorp/terraform
 github.com/xanzy/ssh-agent
