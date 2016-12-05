@@ -24,7 +24,7 @@ $ tar -xvf 0.0.1-terraform-provisioner-ansible.tar.gz /usr/local/bin
 Once installed, a `~/.terraformrc` file is used to _enable_ the plugin.
 
 ```bash
-providers {
+provisioners {
     ansible = "/usr/local/bin/terraform-provisioner-ansible"
 }
 ```
