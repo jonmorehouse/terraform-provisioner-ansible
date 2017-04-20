@@ -193,3 +193,4 @@ func (p *Provisioner) resolvePath(path string) (string, error) {
 
 	return "", fmt.Errorf("Path not valid: [%s]", relativePath)
 }
+
