@@ -18,6 +18,18 @@ type ResourceProvisioner struct {
 	extraVars map[string]string // extra variables that can be passed to the provisioner
 }
 
+
+func (r *ResourceProvisioner) Stop() error {
+	provisioner, err := r.decodeConfig(c)
+	if err != nil {
+		o.Output("error decoding provisioner")
+		return err
+	}
+
+	// implement stop
+}
+
+
 func (r *ResourceProvisioner) Apply(
 	o terraform.UIOutput,
 	s *terraform.InstanceState,
