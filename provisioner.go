@@ -41,8 +41,7 @@ func (p *Provisioner) Run(o terraform.UIOutput, comm communicator.Communicator) 
 		// https://github.com/hashicorp/terraform/issues/1025
 		// cloud-init runs on fresh sources and can interfere with apt-get update commands causing intermittent failures
 		"/bin/bash -c 'until [[ -f /var/lib/cloud/instance/boot-finished ]]; do sleep 1; done'",
-		"apt-get update",
-		"apt-get install -y build-essential python-dev",
+		"/bin/bash -c ' if [[ -f /etc/redhat-release ]];then yum update -y && yum groupinstall -y \"Development Tools\" &&  yum install -y python-devel; else apt-get update && apt-get install -y build-essential python-dev; fi'",
 		"curl https://bootstrap.pypa.io/get-pip.py | sudo python",
 		"pip install ansible",
 	}
