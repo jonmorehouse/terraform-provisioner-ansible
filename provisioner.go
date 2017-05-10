@@ -3,21 +3,24 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/hashicorp/terraform/communicator"
 	"github.com/hashicorp/terraform/communicator/remote"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/mitchellh/go-homedir"
 	"github.com/mitchellh/go-linereader"
-	"io"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 type Provisioner struct {
 	useSudo            bool
+	useVault           bool
 	ansibleLocalScript string
 	Playbook           string            `mapstructure:"playbook"`
+	VaultFile          string            `mapstructure:"vault_file"`
 	Plays              []string          `mapstructure:"plays"`
 	Hosts              []string          `mapstructure:"hosts"`
 	ModulePath         string            `mapstructure:"module_path"`
@@ -42,7 +45,7 @@ func (p *Provisioner) Run(o terraform.UIOutput, comm communicator.Communicator) 
 		// cloud-init runs on fresh sources and can interfere with apt-get update commands causing intermittent failures
 		"/bin/bash -c 'until [[ -f /var/lib/cloud/instance/boot-finished ]]; do sleep 1; done'",
 		"apt-get update",
-		"apt-get install -y build-essential python-dev",
+		"apt-get install -y build-essential libssl-dev python-dev",
 		"curl https://bootstrap.pypa.io/get-pip.py | sudo python",
 		"pip install ansible",
 	}
@@ -71,6 +74,16 @@ func (p *Provisioner) Run(o terraform.UIOutput, comm communicator.Communicator) 
 
 	extraVars, err := json.Marshal(p.ExtraVars)
 	if err != nil {
+		return err
+	}
+
+	// upload ansible vault key
+	vaultfile, err := os.Open(p.VaultFile)
+	if err != nil {
+		return err
+	}
+
+	if err := comm.Upload("/tmp/vault_pass.txt", vaultfile); err != nil {
 		return err
 	}
 
@@ -131,6 +144,7 @@ func (p *Provisioner) runCommand(
 	command string) error {
 
 	var err error
+
 	if p.useSudo {
 		command = "sudo " + command
 	}
@@ -193,4 +207,3 @@ func (p *Provisioner) resolvePath(path string) (string, error) {
 
 	return "", fmt.Errorf("Path not valid: [%s]", relativePath)
 }
-

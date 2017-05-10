@@ -2,33 +2,28 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/hashicorp/terraform/communicator"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/mitchellh/mapstructure"
-	"log"
-	"time"
 )
 
 type ResourceProvisioner struct {
-	playbook  string // filepath for the
-	inventory string
+	playbook    string // filepath for the playbook
+	ansible_dir string // path to the ansible directory
+	inventory   string
 
 	groups    []string          // list of group-vars to be passed to the provisioner
 	hosts     []string          // list of host groups to apply to the provisioner
 	extraVars map[string]string // extra variables that can be passed to the provisioner
 }
 
-
 func (r *ResourceProvisioner) Stop() error {
-	provisioner, err := r.decodeConfig(c)
-	if err != nil {
-		o.Output("error decoding provisioner")
-		return err
-	}
-
 	// implement stop
+	return nil
 }
-
 
 func (r *ResourceProvisioner) Apply(
 	o terraform.UIOutput,
@@ -47,7 +42,8 @@ func (r *ResourceProvisioner) Apply(
 		return err
 	}
 	provisioner.useSudo = true
-	provisioner.ansibleLocalScript = fmt.Sprintf("https://raw.githubusercontent.com/jonmorehouse/terraform-provisioner-ansible/%s/ansible-local.py", VERSION)
+	provisioner.useVault = true
+	provisioner.ansibleLocalScript = fmt.Sprintf("https://raw.githubusercontent.com/eHealthAfrica/terraform-provisioner-ansible/%s/ansible-local.py", VERSION)
 
 	// ensure that this is a linux machine
 	if s.Ephemeral.ConnInfo["type"] != "ssh" {
