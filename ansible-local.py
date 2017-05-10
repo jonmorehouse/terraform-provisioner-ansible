@@ -109,11 +109,11 @@ if __name__ == '__main__':
                            check=False)
 
     loader = DataLoader()
-    if os.path.exists('/tmp/vault_pass.txt')
+    if os.path.exists('/tmp/vault_pass.txt'):
         with open('/tmp/vault_pass.txt', 'r') as vaultfile:
             data=vaultfile.read().replace('\n', '')
         loader.set_vault_password(data)
-        
+
     variable_manager = VariableManager()
     variable_manager.extra_vars.update(args.extra_vars)
 
