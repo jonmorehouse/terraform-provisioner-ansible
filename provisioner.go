@@ -65,7 +65,7 @@ func (p *Provisioner) Run(o terraform.UIOutput, comm communicator.Communicator) 
 
 	// the host playbook path is the path on the host where the playbook
 	// will be uploaded too
-	remotePlaybookPath := filepath.Join("/tmp", filepath.Base(playbookPath))
+	remotePlaybookPath := filepath.Join("/tmp/ansible", filepath.Base(playbookPath))
 
 	// upload ansible source and playbook to the host
 	if err := comm.UploadDir("/tmp/ansible", playbookDir); err != nil {
