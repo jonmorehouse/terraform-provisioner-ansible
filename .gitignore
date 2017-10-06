@@ -1,1 +1,3 @@
 terraform-provisioner-ansible
+.idea/
+example/.terraform/
