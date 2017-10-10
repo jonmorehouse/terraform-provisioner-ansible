@@ -39,7 +39,7 @@ deploy:
   file: terraform-provisioner-ansible_*
   file_glob: true
   on:
-    repo: joaocc/jonmorehouse--terraform-provisioner-ansible
+    repo: pyToshka/terraform-provisioner-ansible
     #all_branches: true
     branch: master
     tags: true
