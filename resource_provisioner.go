@@ -132,3 +132,7 @@ func retryFunc(timeout time.Duration, f func() error) error {
 		}
 	}
 }
+
+func (r *ResourceProvisioner) Stop() error {
+	return nil
+}

@@ -1,0 +1,45 @@
+sudo: false
+
+language: go
+go:
+  - 1.9
+
+env:
+  - GIMME_OS=linux   GIMME_ARCH=amd64
+  - GIMME_OS=darwin  GIMME_ARCH=amd64
+  - GIMME_OS=windows GIMME_ARCH=amd64
+
+branches:
+  only:
+    - master
+
+# workaround for travis-ci/gimme#25 to pick up latest version of gimme and run again
+before_install:
+  - curl -o gimme -sL https://raw.githubusercontent.com/travis-ci/gimme/master/gimme
+  - chmod u+x gimme
+  - unset GOROOT GOTOOLDIR
+  - eval "$(./gimme 1.9)"
+  - go version
+  - go env
+
+install:
+  - date -u +"%Y-%m-%dT%H:%M:%SZ"
+  - go get -d -v ./...
+
+script:
+  - go build -v -o terraform-provisioner-ansible
+  - tar czvf terraform-provisioner-ansible_${TRAVIS_TAG}_${GIMME_OS}_${GIMME_ARCH}.tar.gz terraform-provisioner-ansible
+
+deploy:
+  # setup with "travis setup releases"
+  provider: releases
+  skip_cleanup: true
+  api_key:
+    secure: x_replace_via___travis_setup_releases___x
+  file: terraform-provisioner-ansible_*
+  file_glob: true
+  on:
+    repo: pyToshka/terraform-provisioner-ansible
+    #all_branches: true
+    branch: master
+    tags: true
