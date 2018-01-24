@@ -47,7 +47,7 @@ func (p *Provisioner) Run(o terraform.UIOutput, comm communicator.Communicator) 
 		"apt-get update",
 		"apt-get install -y build-essential libssl-dev python-dev",
 		"curl https://bootstrap.pypa.io/get-pip.py | sudo python",
-		"pip install ansible",
+		"pip install ansible==2.2.1.0",
 	}
 
 	for _, command := range provisionAnsibleCommands {
